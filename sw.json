@@ -1,0 +1,56 @@
+// Service Worker para PWA
+const CACHE_NAME = 'recetas-maria-v1.0.0';
+const RUNTIME = 'runtime';
+
+// Archivos a cachear (solo el index.html)
+const PRECACHE_URLS = [
+  './',
+  './index.html'
+];
+
+// Instalación - cachear archivos
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(self.skipWaiting())
+  );
+});
+
+// Activación - limpiar cachés viejos
+self.addEventListener('activate', event => {
+  const currentCaches = [CACHE_NAME, RUNTIME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return cacheNames.filter(cacheName => !currentCaches.includes(cacheName));
+    }).then(cachesToDelete => {
+      return Promise.all(cachesToDelete.map(cacheToDelete => {
+        return caches.delete(cacheToDelete);
+      }));
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch - estrategia Network First (siempre intenta red primero)
+self.addEventListener('fetch', event => {
+  // Solo cachear peticiones GET
+  if (event.request.method !== 'GET') return;
+  
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Si la respuesta es válida, actualizarla en caché
+        if (response && response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(RUNTIME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Si falla la red, usar caché
+        return caches.match(event.request);
+      })
+  );
+});
