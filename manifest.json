@@ -1,8 +1,8 @@
 {
-  "name": "Recetas de María Obdulia Sureda Brunet",
-  "short_name": "Recetas María",
-  "description": "Recetario familiar tradicional de María Obdulia Sureda Brunet",
-  "start_url": "./index.html",
+  "name": "Recetas de Mar\u00eda Obdulia Sureda Brunet",
+  "short_name": "Recetas Mar\u00eda",
+  "description": "Recetario familiar tradicional de Mar\u00eda Obdulia Sureda Brunet",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f1e8",
   "theme_color": "#2c3e50",
