@@ -119,6 +119,21 @@
         
         .btn-primary { width: 100%; padding: 15px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; -webkit-appearance: none; }
         .btn-secondary { width: 100%; padding: 15px; background: white; color: #666; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; -webkit-appearance: none; }
+    
+        /* ÍNDICE ALFABÉTICO */
+        .indice-container { padding-bottom: 90px; }
+        .letras-rapidas { display: flex; gap: 3px; overflow-x: auto; padding: 10px 15px; background: white; border-bottom: 2px solid #f0f0f0; position: sticky; top: 130px; z-index: 90; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .letras-rapidas::-webkit-scrollbar { display: none; }
+        .letra-quick { min-width: 30px; height: 30px; border-radius: 50%; background: #f0f0f0; border: none; color: #666; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; -webkit-appearance: none; }
+        .letra-quick:active { background: #3498db; color: white; transform: scale(1.1); }
+        .letra-seccion { margin: 20px; }
+        .letra-titulo { background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; padding: 12px 20px; border-radius: 12px; font-size: 20px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .letra-count { font-size: 14px; opacity: 0.9; font-weight: 500; }
+        .indice-lista { list-style: none; padding: 0; margin: 0; }
+        .indice-item { background: white; padding: 15px 18px; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .indice-item:active { background: #f8f9fa; transform: scale(0.98); }
+        .indice-nombre { flex: 1; font-size: 15px; font-weight: 500; color: #2c3e50; line-height: 1.4; }
+        .indice-cat { font-size: 11px; color: #999; background: #f5f5f5; padding: 4px 10px; border-radius: 12px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -147,6 +162,7 @@
         <div class="bottom-nav">
             <button class="nav-btn active" data-view="todas"><div class="nav-icon">📚</div><div>Todas</div></button>
             <button class="nav-btn" data-view="favoritos"><div class="nav-icon">❤️</div><div>Favoritas</div></button>
+            <button class="nav-btn" data-view="indice"><div class="nav-icon">🔤</div><div>Índice</div></button>
             <button class="nav-btn" data-view="misrecetas"><div class="nav-icon">✏️</div><div>Mis Recetas</div></button>
         </div>
         
@@ -247,6 +263,68 @@
             });
         }
         
+        
+        function renderIndice() {
+            const todasRecetas = recetas.filter(r => {
+                const matchBusqueda = r.titulo.toLowerCase().includes(busqueda.toLowerCase());
+                return matchBusqueda;
+            });
+            
+            // Agrupar por letra
+            const porLetra = {};
+            const recetasOrdenadas = [...todasRecetas].sort((a, b) => a.titulo.localeCompare(b.titulo));
+            
+            recetasOrdenadas.forEach(r => {
+                const letra = r.titulo[0].toUpperCase();
+                if (!porLetra[letra]) porLetra[letra] = [];
+                porLetra[letra].push(r);
+            });
+            
+            const letras = Object.keys(porLetra).sort();
+            
+            // Navegación rápida de letras
+            let htmlLetras = '<div class="letras-rapidas">';
+            letras.forEach(l => {
+                htmlLetras += `<button class="letra-quick" onclick="scrollToLetra('${l}')">${l}</button>`;
+            });
+            htmlLetras += '</div>';
+            
+            // Índice completo
+            let htmlIndice = '<div class="indice-container">';
+            letras.forEach(letra => {
+                htmlIndice += `
+                    <div class="letra-seccion" id="letra-${letra}">
+                        <div class="letra-titulo">
+                            <span>${letra}</span>
+                            <span class="letra-count">${porLetra[letra].length} receta${porLetra[letra].length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <ul class="indice-lista">
+                            ${porLetra[letra].map(r => `
+                                <li class="indice-item" onclick="mostrarReceta('${r.titulo.replace(/'/g, "\'")}')">
+                                    <span class="indice-nombre">${r.titulo}</span>
+                                    <span class="indice-cat">${r.categoria}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            });
+            htmlIndice += '</div>';
+            
+            document.getElementById('recipesGrid').innerHTML = htmlLetras + htmlIndice;
+            document.getElementById('stats').innerHTML = `<div class="stat"><span>📖</span><span>${todasRecetas.length} recetas</span></div>`;
+            document.getElementById('categories').innerHTML = '';
+        }
+        
+        function scrollToLetra(letra) {
+            const el = document.getElementById('letra-' + letra);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Compensar por header sticky
+                window.scrollBy(0, -150);
+            }
+        }
+
         function renderCategorias() {
             const html = CATEGORIAS.map(cat => 
                 `<button class="category-btn cat-${getCategoriaClass(cat)} ${categoriaActual === cat ? 'active' : ''}" onclick="cambiarCategoria('${cat}')">${cat}</button>`
@@ -401,7 +479,11 @@
         
         document.getElementById('searchBox').addEventListener('input', function(e) {
             busqueda = e.target.value;
-            renderRecetas();
+            if (vistaActual === 'indice') {
+                renderIndice();
+            } else {
+                renderRecetas();
+            }
         });
         
         document.getElementById('modal').addEventListener('click', function(e) {
@@ -417,7 +499,12 @@
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 vistaActual = this.dataset.view;
-                renderRecetas();
+                
+                if (vistaActual === 'indice') {
+                    renderIndice();
+                } else {
+                    renderRecetas();
+                }
             });
         });
 
